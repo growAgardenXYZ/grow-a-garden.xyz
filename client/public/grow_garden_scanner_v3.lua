@@ -226,14 +226,31 @@ local function scanStock()
     scanResults = {}
     StatusLabel.Text = "Status: Scanning for shop..."
     
-    -- Wait for the shop to be loaded
+    -- Wait for the shop to be loaded using the specific path
     local seedShop = nil
     
-    -- Look for the shop UI in the player's GUI
-    for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
-        if gui.Name == "Seed_Shop" then
-            seedShop = gui
-            break
+    -- Try the specific path first: Players.Player.PlayerGui.Seed_Shop
+    local success, result = pcall(function()
+        return game.Players.Player.PlayerGui.Seed_Shop
+    end)
+    
+    -- If that fails, try LocalPlayer
+    if not success or not result then
+        success, result = pcall(function()
+            return game.Players.LocalPlayer.PlayerGui.Seed_Shop
+        end)
+    end
+    
+    -- If still no success, try to find it in all children
+    if success and result then
+        seedShop = result
+    else
+        -- Look for the shop UI in the player's GUI
+        for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
+            if gui.Name == "Seed_Shop" then
+                seedShop = gui
+                break
+            end
         end
     end
     
