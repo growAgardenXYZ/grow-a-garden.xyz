@@ -87,6 +87,7 @@ export const stockEntry = z.object({
 
 // Request schema for updating stock data
 export const updateStockRequestSchema = z.object({
+  apiKey: z.string().min(1, "API key is required"),
   items: z.array(z.object({
     name: z.string(),
     currentStock: z.number(),

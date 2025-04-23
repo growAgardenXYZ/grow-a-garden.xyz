@@ -32,6 +32,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updateData = updateStockRequestSchema.parse(req.body);
       
+      // Verify API key
+      const validApiKey = process.env.GARDEN_API_KEY;
+      if (!validApiKey || updateData.apiKey !== validApiKey) {
+        return res.status(401).json({ 
+          message: "Unauthorized: Invalid API key"
+        });
+      }
+      
       // Update stock data
       await storage.updateStock(updateData);
       
