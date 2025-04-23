@@ -89,7 +89,6 @@ export default function ItemTable({ items, isLoading, error, activeTab }: ItemTa
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sellable</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rarity</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock %</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
               </tr>
             </thead>
@@ -128,9 +127,7 @@ export default function ItemTable({ items, isLoading, error, activeTab }: ItemTa
                       {item.rarity}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{item.stockPercentage || 'N/A'}</div>
-                  </td>
+
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="text-sm font-medium text-gray-900">{item.currentStock}</div>

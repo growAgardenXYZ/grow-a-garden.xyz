@@ -97,9 +97,6 @@ export default function ItemCard({ item }: ItemCardProps) {
             <span className={`px-2 py-0.5 text-xs rounded-full ${getRarityClass(item.rarity)} text-white`}>
               {item.rarity}
             </span>
-            {item.stockPercentage && (
-              <span className="text-xs text-gray-500 ml-2">{item.stockPercentage}</span>
-            )}
           </div>
         </div>
         <div className="h-10 w-10 bg-green-100 rounded-md flex items-center justify-center">
@@ -111,7 +108,7 @@ export default function ItemCard({ item }: ItemCardProps) {
         <div className="text-gray-500">Sell: <span className="text-gray-900">{item.sellPrice ? formatCurrency(item.sellPrice) : 'N/A'}</span></div>
         <div className="text-gray-500">Profit: <span className="text-gray-900">{item.profit || 'N/A'}</span></div>
         {item.rarity.includes("Exclusive") ? (
-          <div className="text-gray-500">Stock: <span className="text-gray-900">{item.stockPercentage || 'N/A'}</span></div>
+          <div className="text-gray-500">Pass: <span className="text-gray-900">{item.rarity.includes("SP") ? "Special" : "Elite"}</span></div>
         ) : (
           <div className="text-gray-500">
             Current: <span className="text-gray-900">{item.currentStock}</span>

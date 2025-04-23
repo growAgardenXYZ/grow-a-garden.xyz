@@ -64,8 +64,27 @@ export default function Home() {
       );
     }
     
+    // Function to get a numeric rarity value for sorting (higher = rarer)
+    const getRarityValue = (rarity: string): number => {
+      if (rarity.includes("Divine")) return 7;
+      if (rarity.includes("Mythical")) return 6;
+      if (rarity.includes("Legendary")) return 5;
+      if (rarity.includes("ESP Exclusive")) return 4;
+      if (rarity.includes("SP Exclusive")) return 4;
+      if (rarity.includes("Limited")) return 3;
+      if (rarity.includes("Rare")) return 2;
+      if (rarity.includes("Uncommon")) return 1;
+      if (rarity.includes("Common")) return 0;
+      return 0;
+    };
+
     // Sort items
     filteredItems.sort((a, b) => {
+      // Always sort by rarity first (rarest at the top)
+      const raritySort = getRarityValue(b.rarity) - getRarityValue(a.rarity);
+      if (raritySort !== 0) return raritySort;
+      
+      // If rarities are the same, sort by the selected method
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
