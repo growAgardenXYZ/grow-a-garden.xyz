@@ -24,8 +24,8 @@ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame")
 Frame.Name = "MainFrame"
-Frame.Size = UDim2.new(0, 300, 0, 375)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -185)
+Frame.Size = UDim2.new(0, 350, 0, 475) -- Increased size to fit everything better
+Frame.Position = UDim2.new(0.5, -175, 0.5, -235) -- Adjusted position for the new size
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 Frame.BorderSizePixel = 0
 Frame.Active = true
@@ -103,9 +103,17 @@ URLInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 URLInput.Font = Enum.Font.SourceSans
 URLInput.Text = CONFIG.URL ~= "https://your-replit-app-url-here.replit.app/api/stock/update" and CONFIG.URL or ""
 URLInput.PlaceholderText = "Enter Server URL"
-URLInput.TextSize = 14
+URLInput.TextSize = 12 -- Smaller text size
 URLInput.ClearTextOnFocus = false
+URLInput.TextWrapped = true -- Allow text wrapping
+URLInput.TextXAlignment = Enum.TextXAlignment.Left -- Left align text
 URLInput.Parent = Frame
+
+-- Set default URL to Replit app if empty
+if URLInput.Text == "" then
+    -- Try to auto-detect current server
+    URLInput.Text = "https://grow-a-garden-stock-tracker.replit.app/api/stock/update"
+end
 
 local ScanButton = Instance.new("TextButton")
 ScanButton.Name = "ScanButton"
@@ -166,12 +174,14 @@ StatusLabel.Parent = Frame
 
 local ResultsFrame = Instance.new("ScrollingFrame")
 ResultsFrame.Name = "Results"
-ResultsFrame.Size = UDim2.new(0.95, 0, 0, 40)
+ResultsFrame.Size = UDim2.new(0.95, 0, 0, 125) -- Increased height significantly
 ResultsFrame.Position = UDim2.new(0.025, 0, 0, 325)
 ResultsFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
 ResultsFrame.BorderSizePixel = 0
 ResultsFrame.ScrollBarThickness = 8
 ResultsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ResultsFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+ResultsFrame.ScrollingEnabled = true
 ResultsFrame.Parent = Frame
 
 -- Variables
@@ -383,29 +393,41 @@ local function scanStock()
     
     -- Process all found seed frames
     local itemCount = 0
+    
+    -- Skip frames that are likely padding/fillers by filtering out frames with certain names
+    local paddingPatterns = {
+        "^padding", "^padding_", "padding$", "_padding$", "^filler", "filler$", "frame$", "^frame", 
+        "^ui", "^bg", "background", "container", "holder"
+    }
+    
     for _, seedInfo in pairs(seedFrames) do
         local cropName = seedInfo.name
-        local frame = seedInfo.frame
-        local available = checkIfInStock(frame)
-        local currentStock = available and 1 or 0
         
-        itemCount = itemCount + 1
+        -- Skip frames that match padding patterns
+        local isPadding = false
+        for _, pattern in ipairs(paddingPatterns) do
+            if string.match(string.lower(cropName), pattern) then
+                isPadding = true
+                break
+            end
+        end
         
-        -- Add to our results
-        table.insert(scanResults, {
-            name = cropName,
-            currentStock = currentStock
-        })
-        
-        -- Display the first 10 items
-        if itemCount <= 10 then
+        if not isPadding then
+            local frame = seedInfo.frame
+            local available = checkIfInStock(frame)
+            local currentStock = available and 1 or 0
+            
+            itemCount = itemCount + 1
+            
+            -- Add to our results
+            table.insert(scanResults, {
+                name = cropName,
+                currentStock = currentStock
+            })
+            
+            -- Display all items (no more 10 item limit)
             addResult(cropName .. ": " .. (available and "In Stock" or "Out of Stock"), itemCount)
         end
-    end
-    
-    -- Show total count if more than 10 items
-    if itemCount > 10 then
-        addResult("...and " .. (itemCount - 10) .. " more items", 11)
     end
     
     if itemCount == 0 then
