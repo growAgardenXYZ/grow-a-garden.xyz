@@ -1,0 +1,100 @@
+Title: Roblox "Grow a Garden" Stock Sync System
+
+Purpose:
+Automatically detect in-game seed stock status in the Roblox game Grow a Garden and send this data securely to a web server using a Lua script executed via a Roblox executor.
+
+Game Structure Insight:
+The shop UI is structured as follows:
+
+Seed_Shop > Frame > ScrollingFrame
+
+Each seed (e.g., Daffodil) is a Frame under ScrollingFrame
+
+Contains a Show_Bottom > Frame
+
+Contains two elements:
+
+In_Stock: Visible only if the item is available
+
+No_Stock: Visible if the item is out of stock
+
+Key Detection Logic:
+
+We determine whether a crop is in stock based on In_Stock.Visible == true
+
+Lua Script Behavior:
+
+Locates the Seed_Shop UI in the player's GUI.
+
+Iterates through each seed entry (each being a Frame).
+
+Checks whether In_Stock is visible.
+
+Collects the stock status of all seeds into a table.
+
+Sends the data to a website as a JSON POST request, with a password for verification.
+
+Lua Script:
+
+local HttpService = game:GetService("HttpService")
+
+-- CONFIG
+local url = "https://your_website_url/stock-update" -- Replace with your endpoint
+local password = "your_password_here" -- Replace with your actual password
+
+-- Get the shop UI
+local shop = game.Players.LocalPlayer.PlayerGui:WaitForChild("Seed_Shop"):WaitForChild("Frame"):WaitForChild("ScrollingFrame")
+
+-- Gather stock data
+local stockData = {}
+
+for _, crop in pairs(shop:GetChildren()) do
+    if crop:IsA("Frame") then
+        local statusFrame = crop:FindFirstChild("Show_Bottom") and crop.Show_Bottom:FindFirstChild("Frame")
+        if statusFrame then
+            local inStock = statusFrame:FindFirstChild("In_Stock")
+            local cropName = crop.Name
+            local available = inStock and inStock.Visible == true
+
+            table.insert(stockData, {
+                name = cropName,
+                in_stock = available
+            })
+        end
+    end
+end
+
+-- Build and send JSON payload
+local payload = HttpService:JSONEncode({
+    password = password,
+    stock = stockData
+})
+
+local response
+pcall(function()
+    response = game:HttpPostAsync(url, payload, Enum.HttpContentType.ApplicationJson, false)
+end)
+
+print("Sent stock data to server. Response:", response)
+
+Expected JSON POST Example:
+
+{
+  "password": "your_password_here",
+  "stock": [
+    { "name": "Daffodil", "in_stock": false },
+    { "name": "Carrot", "in_stock": true },
+    ...
+  ]
+}
+
+Next Steps for Web Integration:
+
+Set up a route (/stock-update) that accepts POST requests.
+
+Authenticate using the provided password field.
+
+Store or display the incoming seed stock data on your frontend.
+
+Let me know if you need help with the backend or frontend setup!
+

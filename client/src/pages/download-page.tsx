@@ -10,6 +10,7 @@ export default function DownloadPage() {
   const [apiKey, setApiKey] = useState("");
   const [luaScript, setLuaScript] = useState("");
   const [simpleLuaScript, setSimpleLuaScript] = useState("");
+  const [v3LuaScript, setV3LuaScript] = useState("");
   
   useEffect(() => {
     // Get the current URL
@@ -26,6 +27,11 @@ export default function DownloadPage() {
       .then(response => response.text())
       .then(text => setSimpleLuaScript(text))
       .catch(error => console.error("Error loading simple Lua script:", error));
+      
+    fetch("/grow_garden_scanner_v3.lua")
+      .then(response => response.text())
+      .then(text => setV3LuaScript(text))
+      .catch(error => console.error("Error loading v3 Lua script:", error));
   }, []);
 
   // Function to update the API URL in the script
@@ -124,10 +130,11 @@ export default function DownloadPage() {
         </Card>
       </div>
       
-      <Tabs defaultValue="standard" className="max-w-4xl mx-auto">
-        <TabsList className="grid grid-cols-2">
+      <Tabs defaultValue="game-structure" className="max-w-4xl mx-auto">
+        <TabsList className="grid grid-cols-3">
           <TabsTrigger value="standard">Standard Script</TabsTrigger>
           <TabsTrigger value="simple">Simple Script</TabsTrigger>
+          <TabsTrigger value="game-structure">Game Structure Script</TabsTrigger>
         </TabsList>
         
         <TabsContent value="standard" className="p-4 border rounded-md mt-2">
@@ -168,6 +175,31 @@ export default function DownloadPage() {
           >
             Download Simple Script
           </Button>
+        </TabsContent>
+        
+        <TabsContent value="game-structure" className="p-4 border rounded-md mt-2">
+          <h2 className="text-xl font-bold mb-2">Game Structure Script (Recommended)</h2>
+          <p className="mb-4 text-gray-600">
+            Based on the actual UI structure of the Grow a Garden game. This is the most accurate script for detecting stock levels.
+          </p>
+          
+          <div className="bg-gray-100 p-4 rounded-md mb-4 max-h-60 overflow-y-auto">
+            <pre className="text-xs text-gray-800 whitespace-pre-wrap">
+              {getUpdatedScript(v3LuaScript, true)}
+            </pre>
+          </div>
+          
+          <Button 
+            className="w-full bg-green-600 hover:bg-green-700"
+            onClick={() => downloadScript(getUpdatedScript(v3LuaScript, true), "grow_garden_scanner_v3.lua")}
+          >
+            Download Game Structure Script
+          </Button>
+          
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md text-blue-700 text-sm">
+            <p className="font-semibold">Why use this script?</p>
+            <p className="mt-1">This script is designed specifically for the Grow a Garden game UI structure to accurately detect whether items are in stock by looking at the actual shop elements. It checks each item's "In_Stock" visibility to determine availability.</p>
+          </div>
         </TabsContent>
       </Tabs>
       
