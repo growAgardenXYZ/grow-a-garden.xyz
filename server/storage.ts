@@ -77,8 +77,18 @@ export class MemStorage implements IStorage {
       for (const item of items) {
         const id = this.itemCurrentId++;
         const gardenItem: GardenItem = {
-          ...item,
           id,
+          name: item.name,
+          type: item.type || "Seeds",
+          buyPrice: item.buyPrice || null,
+          sellPrice: item.sellPrice || null,
+          profit: item.profit || null,
+          sellable: item.sellable || false,
+          rarity: item.rarity,
+          stockPercentage: item.stockPercentage || null,
+          yieldRange: item.yieldRange || null,
+          currentStock: item.currentStock || 0,
+          maxStock: item.maxStock || 0,
           updatedAt: new Date()
         };
         this.gardenItems.set(id, gardenItem);
