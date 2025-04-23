@@ -123,8 +123,11 @@ export class MemStorage implements IStorage {
   }
 
   async updateStock(updateData: UpdateStockRequest): Promise<void> {
+    // We're removing the apiKey from the data object as it's no longer needed after authentication
+    const { apiKey, ...cleanedData } = updateData;
+    
     // Update item stocks
-    for (const item of updateData.items) {
+    for (const item of cleanedData.items) {
       await this.updateGardenItemStock(item.name, item.currentStock);
     }
 
@@ -132,8 +135,8 @@ export class MemStorage implements IStorage {
     const latestUpdate = await this.getLatestStockUpdate();
     const newUpdate: InsertStockUpdate = {
       lastUpdated: new Date(),
-      seedsLastRestock: updateData.seedsRestocked ? new Date() : latestUpdate?.seedsLastRestock,
-      easterLastRestock: updateData.easterRestocked ? new Date() : latestUpdate?.easterLastRestock
+      seedsLastRestock: cleanedData.seedsRestocked ? new Date() : latestUpdate?.seedsLastRestock,
+      easterLastRestock: cleanedData.easterRestocked ? new Date() : latestUpdate?.easterLastRestock
     };
     
     await this.createStockUpdate(newUpdate);
