@@ -226,70 +226,180 @@ local function scanStock()
     scanResults = {}
     StatusLabel.Text = "Status: Scanning for shop..."
     
-    -- Wait for the shop to be loaded using the specific path
-    local seedShop = nil
+    -- Known seed names to check for
+    local seedNames = {
+        "Carrot", "Strawberry", "Blueberry", "Orange Tulip", "Tomato", 
+        "Corn", "Daffodil", "Watermelon", "Pumpkin", "Apple", 
+        "Bamboo", "Coconut", "Cactus", "Dragon Fruit", "Mango", 
+        "Grape", "Lemon", "Pineapple", "Peach", "Raspberry", 
+        "Pear", "Papaya", "Banana", "Passionfruit", "Soul Fruit", 
+        "Cursed Fruit", "Cherry blossom", "Chocolate Carrot", "Red Lollipop", 
+        "Candy Sunflower", "Easter Egg", "Candy Blossom"
+    }
     
-    -- Try the specific path first: Players.Player.PlayerGui.Seed_Shop
-    local success, result = pcall(function()
-        return game.Players.Player.PlayerGui.Seed_Shop
-    end)
+    -- Wait for the shop to be loaded
+    local seedShop
     
-    -- If that fails, try LocalPlayer
-    if not success or not result then
-        success, result = pcall(function()
-            return game.Players.LocalPlayer.PlayerGui.Seed_Shop
-        end)
+    -- Try several paths to find the Seed_Shop GUI
+    local paths = {
+        function() return game.Players.Player.PlayerGui.Seed_Shop end,
+        function() return game.Players.LocalPlayer.PlayerGui.Seed_Shop end
+    }
+    
+    for _, pathFunc in ipairs(paths) do
+        local success, result = pcall(pathFunc)
+        if success and result then
+            seedShop = result
+            break
+        end
     end
     
-    -- If still no success, try to find it in all children
-    if success and result then
-        seedShop = result
-    else
-        -- Look for the shop UI in the player's GUI
-        for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
-            if gui.Name == "Seed_Shop" then
-                seedShop = gui
-                break
+    -- If we still haven't found it, look through all GUIs
+    if not seedShop then
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            for _, gui in pairs(player.PlayerGui:GetChildren()) do
+                if gui.Name:find("Seed") or gui.Name:find("Shop") then
+                    seedShop = gui
+                    break
+                end
             end
+            if seedShop then break end
         end
     end
     
     if not seedShop then
-        StatusLabel.Text = "Status: Shop not found. Are you at the shop?"
+        StatusLabel.Text = "Status: Shop UI not found. Are you at the shop?"
         return
     end
     
-    StatusLabel.Text = "Status: Found shop, scanning items..."
+    StatusLabel.Text = "Status: Found shop, scanning for seed frames..."
     
-    -- Get the ScrollingFrame containing the items
-    local scrollFrame = seedShop:WaitForChild("Frame"):WaitForChild("ScrollingFrame")
-    
-    -- Get all crop frames
-    local items = {}
-    local itemCount = 0
-    
-    for _, crop in pairs(scrollFrame:GetChildren()) do
-        if crop:IsA("Frame") then
-            local statusFrame = crop:FindFirstChild("Show_Bottom") and crop.Show_Bottom:FindFirstChild("Frame")
+    -- Function to check if a frame has In_Stock or No_Stock
+    local function checkIfInStock(frame)
+        -- Attempt to find the stock indicators directly
+        local inStock = frame:FindFirstChild("In_Stock", true)
+        local noStock = frame:FindFirstChild("No_Stock", true)
+        
+        if inStock and inStock.Visible then
+            return true
+        elseif noStock and noStock.Visible then
+            return false
+        end
+        
+        -- If we couldn't find direct indicators, try using the Show_Bottom structure
+        local showBottom = frame:FindFirstChild("Show_Bottom")
+        if showBottom then
+            local statusFrame = showBottom:FindFirstChild("Frame")
             if statusFrame then
-                local inStock = statusFrame:FindFirstChild("In_Stock")
-                local cropName = crop.Name
-                local available = inStock and inStock.Visible == true
-                local currentStock = available and 1 or 0
-                
-                itemCount = itemCount + 1
-                
-                -- Add to our results
-                table.insert(scanResults, {
-                    name = cropName,
-                    currentStock = currentStock
-                })
-                
-                -- Display the first 10 items
-                if itemCount <= 10 then
-                    addResult(cropName .. ": " .. (available and "In Stock" or "Out of Stock"), itemCount)
+                inStock = statusFrame:FindFirstChild("In_Stock")
+                if inStock and inStock.Visible then
+                    return true
                 end
             end
+        end
+        
+        return false -- Default to not in stock if we can't determine
+    end
+    
+    -- Function to search recursively through all frames in the shop
+    local function findAllSeedFrames(parent)
+        local foundFrames = {}
+        
+        -- First, search for direct seed name matches
+        for _, seedName in ipairs(seedNames) do
+            local seedFrame = parent:FindFirstChild(seedName)
+            if seedFrame and seedFrame:IsA("Frame") then
+                table.insert(foundFrames, {name = seedName, frame = seedFrame})
+            end
+        end
+        
+        -- If we didn't find enough specific frames, look through all frames recursively
+        if #foundFrames < 5 then
+            local function searchFrames(frame)
+                for _, child in pairs(frame:GetChildren()) do
+                    -- Check if it's a frame that might be a seed
+                    if child:IsA("Frame") then
+                        -- Check if it's a named seed we already know
+                        local isKnownSeed = false
+                        for _, name in ipairs(seedNames) do
+                            if child.Name == name then
+                                isKnownSeed = true
+                                break
+                            end
+                        end
+                        
+                        if not isKnownSeed then
+                            -- Look for any text labels that might contain seed names
+                            local foundNameLabel = false
+                            for _, textLabel in pairs(child:GetDescendants()) do
+                                if textLabel:IsA("TextLabel") then
+                                    local text = textLabel.Text
+                                    for _, seedName in ipairs(seedNames) do
+                                        if text:find(seedName) then
+                                            table.insert(foundFrames, {name = seedName, frame = child})
+                                            foundNameLabel = true
+                                            break
+                                        end
+                                    end
+                                    if foundNameLabel then break end
+                                end
+                            end
+                        end
+                        
+                        -- Recursively search children
+                        searchFrames(child)
+                    end
+                end
+            end
+            
+            searchFrames(parent)
+        end
+        
+        return foundFrames
+    end
+    
+    -- Look for the seed frames in the shop UI
+    local seedFrames = findAllSeedFrames(seedShop)
+    
+    -- Try to find the ScrollingFrame directly as a fallback
+    if #seedFrames == 0 then
+        local scrollFrame
+        for _, obj in pairs(seedShop:GetDescendants()) do
+            if obj:IsA("ScrollingFrame") then
+                scrollFrame = obj
+                break
+            end
+        end
+        
+        if scrollFrame then
+            StatusLabel.Text = "Status: Found ScrollingFrame, scanning items..."
+            for _, child in pairs(scrollFrame:GetChildren()) do
+                if child:IsA("Frame") then
+                    table.insert(seedFrames, {name = child.Name, frame = child})
+                end
+            end
+        end
+    end
+    
+    -- Process all found seed frames
+    local itemCount = 0
+    for _, seedInfo in pairs(seedFrames) do
+        local cropName = seedInfo.name
+        local frame = seedInfo.frame
+        local available = checkIfInStock(frame)
+        local currentStock = available and 1 or 0
+        
+        itemCount = itemCount + 1
+        
+        -- Add to our results
+        table.insert(scanResults, {
+            name = cropName,
+            currentStock = currentStock
+        })
+        
+        -- Display the first 10 items
+        if itemCount <= 10 then
+            addResult(cropName .. ": " .. (available and "In Stock" or "Out of Stock"), itemCount)
         end
     end
     
@@ -299,7 +409,7 @@ local function scanStock()
     end
     
     if itemCount == 0 then
-        StatusLabel.Text = "Status: No items found in shop."
+        StatusLabel.Text = "Status: No seed items found. Please ensure the shop is open."
     else
         StatusLabel.Text = "Status: Found " .. itemCount .. " items!"
         -- Make the results frame larger to show more results
