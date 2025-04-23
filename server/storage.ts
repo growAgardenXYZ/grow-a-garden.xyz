@@ -127,7 +127,14 @@ export class MemStorage implements IStorage {
 
   async createStockUpdate(update: InsertStockUpdate): Promise<StockUpdate> {
     const id = this.stockUpdateCurrentId++;
-    const stockUpdate: StockUpdate = { ...update, id };
+    // Ensure lastUpdated is never undefined
+    const lastUpdated = update.lastUpdated || new Date();
+    const stockUpdate: StockUpdate = { 
+      id,
+      lastUpdated,
+      seedsLastRestock: update.seedsLastRestock || null,
+      easterLastRestock: update.easterLastRestock || null
+    };
     this.stockUpdates.push(stockUpdate);
     return stockUpdate;
   }
